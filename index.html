@@ -1,0 +1,1398 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#FFFFFF">
+<meta name="description" content="LiftPlan: jadwal latihan gym mingguan dengan animasi contoh gerakan">
+<title>LiftPlan — Jadwal Latihan Gym</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#FFFFFF;--soft:#F7F8FA;--panel:#FFFFFF;--panel2:#F3F4F6;--line:#ECEEF2;--line2:#E3E5EA;
+  --text:#111318;--ink2:#3A3F4B;--mute:#5B6170;
+  --acc:#FF5A1F;--acc-ink:#C2410C;--acc-deep:#9A3412;--acc-soft:#FFF1EA;--acc-card:#FFF4EE;
+  --ok:#16A34A;--ok-ink:#15803D;--ok-soft:#DCFCE7;--danger:#DC2626;--blue:#2563EB;--blue-soft:#EFF6FF;
+  --r:20px;--shadow:0 1px 2px rgba(17,19,24,.04);
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;background:var(--bg);color:var(--text);font-family:'Plus Jakarta Sans',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;font-size:15px;line-height:1.45}
+body.lock{overflow:hidden}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+button:disabled{opacity:.45;cursor:default}
+a{color:var(--acc-ink)}
+.logo{font-weight:800;font-size:20px;letter-spacing:-.4px}
+.logo span{color:var(--acc-ink)}
+.dbstat{font-size:12px;color:var(--mute);display:flex;align-items:center;gap:6px}
+.dot{width:8px;height:8px;border-radius:50%;background:#9AA0AC;flex:none}
+.dot.ok{background:var(--ok)}.dot.err{background:var(--danger)}.dot.load{background:var(--acc);animation:pulse 1s infinite}
+@keyframes pulse{50%{opacity:.3}}
+
+/* sapaan & judul */
+.hello{display:flex;flex-direction:column;gap:2px;margin:18px 0 2px}
+.hello span{font-size:13px;font-weight:500;color:var(--mute)}
+.hello span b{color:var(--text);font-weight:700}
+.hello h1{margin:0;font-size:28px;font-weight:800;letter-spacing:-.6px}
+
+/* pemilih hari */
+.days{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin:14px 0}
+.chip-day{background:var(--soft);border:1px solid var(--line);border-radius:16px;padding:9px 2px;text-align:center;font-size:11px;font-weight:500;color:#6B7180;line-height:1.3;min-width:0}
+.chip-day b{display:block;font-size:12.5px;font-weight:700;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:0 3px}
+.chip-day.on{background:var(--text);border-color:var(--text);color:#C9CDD6}
+.chip-day.on b{color:#fff}
+.chip-day.today:not(.on){border-color:var(--acc);box-shadow:inset 0 0 0 1px var(--acc)}
+.chip-day.t-rest b{color:var(--mute)}
+.chip-day.t-activity b{color:var(--blue)}
+.chip-day.on.t-rest b,.chip-day.on.t-activity b{color:#fff}
+
+h2{font-size:20px;font-weight:800;letter-spacing:-.3px;margin:8px 0 2px}
+.sub{color:var(--mute);font-size:13px;margin:0 0 12px}
+.sec-h{display:flex;align-items:center;justify-content:space-between;margin:20px 0 10px}
+.sec-h h3{margin:0;font-size:17px;font-weight:800}
+.sec-h button{background:none;border:0;color:var(--acc-ink);font-weight:700;font-size:13.5px;padding:6px 0}
+
+/* kartu progres */
+.prog-card{background:var(--acc-card);border-radius:22px;padding:16px 18px;display:flex;flex-direction:column;gap:10px}
+.prog-card .r{display:flex;justify-content:space-between;font-size:13px;font-weight:600;color:var(--acc-deep)}
+.prog-card .big{font-size:24px;font-weight:800;letter-spacing:-.4px}
+.prog-card .pills{display:flex;gap:8px;flex-wrap:wrap}
+.prog-card .pills span{font-size:12px;font-weight:600;padding:4px 10px;border-radius:20px;background:#fff;color:var(--ink2)}
+.progress{height:8px;background:#FFDCCB;border-radius:8px;overflow:hidden}
+.progress i{display:block;height:100%;background:var(--acc);border-radius:8px;width:0;transition:width .3s}
+
+/* kartu gerakan */
+.card{background:#fff;border:1px solid var(--line);border-radius:var(--r);padding:12px;margin-bottom:12px;box-shadow:var(--shadow);transition:border-color .15s,background .15s}
+.card.selected,.exrow.selected{border-color:#FCA5A5;background:#FFF5F5}
+.ex-head{display:flex;gap:12px;align-items:flex-start;cursor:pointer}
+.ex-head .media{width:var(--thumb,96px);flex:none}
+.ex-info{min-width:0;flex:1}
+.ex-num{font-size:11px;color:var(--acc-ink);font-weight:700;letter-spacing:.6px;text-transform:uppercase}
+.ex-name{font-weight:700;font-size:15.5px;margin:1px 0}
+.ex-alias{color:var(--mute);font-size:13px}
+.ex-meta{margin-top:6px;font-size:13px;color:var(--ink2)}
+.ex-meta b{color:var(--text)}
+.tags{display:flex;flex-wrap:wrap;gap:5px;margin-top:7px}
+.tag{font-size:11.5px;font-weight:600;padding:3px 10px;border-radius:20px;background:var(--panel2);color:var(--ink2)}
+.tag.p{background:var(--acc-soft);color:var(--acc-deep)}
+.note{font-size:13px;color:var(--ink2);background:var(--soft);border-radius:12px;padding:8px 11px;margin-top:10px}
+.sets{display:flex;flex-wrap:wrap;gap:7px;margin-top:12px}
+.set{min-width:64px;padding:9px 12px;border-radius:12px;border:1px solid var(--line2);background:#fff;font-size:12.5px;font-weight:600;text-align:center}
+.set.done{background:var(--ok-soft);border-color:transparent;color:var(--ok-ink);font-weight:700}
+.warn{border-color:#FCD34D;background:#FFFBEB}
+.warn .ex-name{color:#92400E}
+.done-mark{width:28px;height:28px;flex:none;border-radius:50%;background:var(--ok);display:flex;align-items:center;justify-content:center;align-self:center}
+
+/* keterangan & aktivitas */
+.desc-card{display:flex;gap:10px;align-items:flex-start;background:var(--blue-soft);border-color:transparent;color:#1E3A8A;font-size:14px;white-space:pre-line;box-shadow:none;margin-top:12px}
+.desc-card svg{flex:none;margin-top:2px}
+.daybig{display:flex;gap:16px;align-items:center;padding:20px}
+.daybig .ic{width:56px;height:56px;border-radius:18px;background:var(--panel2);display:flex;align-items:center;justify-content:center;flex:none}
+.daybig.t-activity{border-color:#BFDBFE;background:var(--blue-soft)}
+.daybig.t-activity .ic{background:#fff}
+.daybig .t{font-weight:800;font-size:18px}
+.daybig .d{color:var(--ink2);font-size:14px;white-space:pre-line;margin-top:4px}
+.daybig .d.empty{color:var(--mute);font-style:italic}
+.daybig .grow{flex:1;min-width:0}
+.btn.done-ok{background:var(--ok-soft);border-color:transparent;color:var(--ok-ink);font-weight:700}
+
+/* jenis hari */
+.seg{padding:4px;border-radius:16px;background:var(--panel2);display:grid;grid-template-columns:repeat(3,1fr);gap:4px;margin-bottom:14px}
+.seg button{background:transparent;border:0;border-radius:12px;padding:11px 4px;font-size:13px;font-weight:600;color:var(--mute)}
+.seg button.on{background:#fff;color:var(--text);font-weight:700;box-shadow:0 1px 3px rgba(17,19,24,.12)}
+.cfg-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.presets{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px}
+.tag-btn{font-size:12.5px;font-weight:600;padding:6px 12px;border-radius:20px;background:#fff;border:1px solid var(--line2);color:var(--ink2)}
+.tag-btn.on{background:var(--blue-soft);border-color:var(--blue);color:#1D4ED8}
+
+/* animasi */
+.media{position:relative;background:#fff;border:1px solid var(--line);aspect-ratio:1/1;border-radius:14px;overflow:hidden;display:flex;align-items:center;justify-content:center}
+.media img{width:100%;height:100%;object-fit:contain;display:block}
+.media.big{width:min(100%,380px);margin:0 auto;border-radius:22px}
+.media .play{position:absolute;right:6px;bottom:6px;background:rgba(17,19,24,.78);color:#fff;font-size:10px;font-weight:600;border-radius:20px;padding:2px 8px;z-index:2}
+.media.empty,.media.err{background:var(--panel2);border-color:transparent;color:var(--mute);font-size:12px;text-align:center;padding:6px}
+.media.err img,.media.err .play{display:none}
+.media.err::after{content:"Animasi gagal dimuat (cek internet)"}
+
+/* tombol & isian */
+.btn{border:1px solid var(--line2);background:#fff;border-radius:12px;padding:9px 14px;font-size:13.5px;font-weight:600;color:var(--text)}
+.btn:hover:not(:disabled){border-color:#C9CDD6}
+.btn.primary{background:var(--text);border-color:var(--text);color:#fff;font-weight:700}
+.btn.primary:hover:not(:disabled){background:#2A2E37}
+.btn.danger{color:var(--danger)}
+.btn.danger-fill{background:var(--danger);border-color:var(--danger);color:#fff;font-weight:700}
+.btn.ghost{background:transparent;border-color:transparent;color:var(--mute)}
+.btn.block{width:100%;padding:13px;border-radius:14px}
+.btn.sm{padding:6px 10px;font-size:12.5px}
+input[type=text],input[type=number],input[type=search],select,textarea{background:#fff;border:1px solid var(--line2);border-radius:14px;padding:11px 13px;width:100%;outline:none;transition:border-color .15s,box-shadow .15s}
+textarea{resize:vertical;min-height:76px;line-height:1.45}
+input:focus,select:focus,textarea:focus{border-color:var(--text);box-shadow:0 0 0 3px rgba(17,19,24,.07)}
+label.f{display:block;font-size:12px;font-weight:600;color:var(--mute);margin-bottom:6px}
+.row{display:flex;gap:8px;align-items:center}
+.grid3{display:grid;grid-template-columns:70px 1fr 96px;gap:8px;margin-top:12px}
+.toolbar{display:flex;gap:6px;flex-wrap:wrap;margin-top:12px}
+.section-t{font-size:11.5px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--mute);margin:24px 0 8px}
+
+/* pilih & hapus */
+.selbox{display:inline-flex;align-items:center;gap:8px;font-size:13px;font-weight:600;color:var(--ink2);cursor:pointer;user-select:none}
+.selbox input{width:20px;height:20px;accent-color:var(--danger);margin:0;cursor:pointer}
+.card.selected .selbox,.exrow.selected .selbox{color:#B91C1C}
+.card-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.selbar{position:sticky;z-index:15;background:#fff;padding:10px 0;display:flex;align-items:center;gap:10px;margin:16px 0 8px;border-bottom:1px solid var(--line)}
+.selbar .n{font-size:13px;font-weight:600;color:var(--mute);margin-left:auto}
+.selbar.active .n{color:#B91C1C;font-weight:700}
+
+/* pustaka */
+.filters{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:8px 0 12px}
+.filters .full{grid-column:1/-1}
+.libgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+.libitem{background:#fff;border:1px solid var(--line);border-radius:16px;overflow:hidden;cursor:pointer;display:flex;flex-direction:column;box-shadow:var(--shadow)}
+.libitem:hover{border-color:#C9CDD6}
+.libitem .media{border-radius:0;border:0;border-bottom:1px solid var(--line)}
+.libitem .t{padding:9px 10px 11px;font-size:13px;font-weight:700;line-height:1.3}
+.libitem .t small{display:block;font-weight:500;color:var(--mute);font-size:11.5px;margin-top:3px}
+.count{font-size:12.5px;color:var(--mute);margin-bottom:8px}
+
+/* modal */
+.modal{position:fixed;inset:0;z-index:50;background:rgba(17,19,24,.45);display:none;justify-content:center}
+.modal.open{display:flex}
+#m2{z-index:60}
+.sheet{background:#fff;width:100%;overflow:auto;padding:0 18px 24px;box-shadow:0 20px 60px rgba(17,19,24,.25)}
+.mhead{position:sticky;top:0;background:#fff;display:flex;align-items:center;gap:10px;padding:16px 0 12px;z-index:3}
+.mhead b{font-size:17px;font-weight:800;flex:1}
+.x{background:var(--panel2);border:0;width:40px;height:40px;border-radius:50%;font-size:15px;flex:none;color:var(--ink2)}
+ol.steps{padding-left:20px;margin:6px 0;color:var(--ink2);font-size:14px}
+ol.steps li{margin-bottom:8px}
+
+/* timer istirahat */
+#timer{position:fixed;z-index:40;display:none}
+#timer.show{display:block}
+#timer .bar{background:var(--text);color:#fff;border-radius:20px;padding:12px 14px 12px 18px;display:flex;align-items:center;gap:10px;box-shadow:0 12px 30px rgba(17,19,24,.28)}
+#timer .big{font-size:24px;font-weight:800;font-variant-numeric:tabular-nums;min-width:66px}
+#timer .lbl{flex:1;font-size:12px;color:#B6BCC8;min-width:0}
+#timer .btn{background:transparent;border-color:#3A3F4B;color:#fff;height:42px;border-radius:13px}
+#timer .btn:last-child{background:#fff;border-color:#fff;color:var(--text);font-weight:700}
+#timer.done .bar{background:var(--ok-ink)}
+#timer.done .lbl{color:#DCFCE7}
+
+#toast{position:fixed;left:50%;top:76px;transform:translateX(-50%);background:var(--text);color:#fff;padding:10px 16px;border-radius:12px;font-size:13.5px;font-weight:600;z-index:90;opacity:0;pointer-events:none;transition:opacity .2s;max-width:90vw;text-align:center}
+#toast.show{opacity:1}
+.empty-state{text-align:center;color:var(--mute);padding:30px 10px}
+.banner{background:#FEF2F2;border:1px solid #FECACA;color:#991B1B;border-radius:14px;padding:12px 14px;font-size:13.5px;margin-top:14px}
+footer{color:#6B7180;font-size:11.5px;text-align:center;margin:28px 0 10px}
+footer a{color:#6B7180}
+
+/* akun */
+.avatar{width:32px;height:32px;border-radius:50%;background:var(--acc-soft);color:var(--acc-deep);font-weight:800;font-size:14px;display:flex;align-items:center;justify-content:center;overflow:hidden;flex:none;text-transform:uppercase}
+.avatar img{width:100%;height:100%;object-fit:cover}
+.avatar.lg{width:72px;height:72px;font-size:28px}
+.sdot{width:8px;height:8px;border-radius:50%;flex:none;background:#9AA0AC}
+.sdot.ok{background:var(--ok)}.sdot.sync{background:var(--acc);animation:pulse 1s infinite}.sdot.err{background:var(--danger)}
+.acct-btn{display:flex;align-items:center;gap:8px;height:42px;border-radius:21px;border:1px solid var(--line2);background:#fff;padding:0 14px 0 5px;font-size:13.5px;font-weight:700;max-width:190px}
+.acct-btn.out{padding:0 14px}
+.acct-btn .u{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.acct-card{padding:14px;border-radius:18px;border:1px solid var(--line);background:var(--soft);display:flex;flex-direction:column;gap:10px}
+.acct-card b{font-size:13.5px}
+.acct-card p{margin:0;font-size:12.5px;line-height:1.45;color:var(--mute)}
+.acct-row{display:flex;align-items:center;gap:10px;background:none;border:0;padding:0;text-align:left;width:100%;cursor:pointer}
+.acct-row .who{min-width:0;flex:1}
+.acct-row .who b{display:block;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.acct-row .who small{display:flex;align-items:center;gap:6px;color:var(--mute);font-size:12px}
+.gbtn{display:flex;align-items:center;justify-content:center;gap:10px;height:48px;border-radius:14px;border:1px solid var(--line2);background:#fff;font-weight:700;font-size:14px;width:100%;color:var(--text)}
+.gbtn:hover{border-color:#C9CDD6}
+.acct-hero{display:flex;flex-direction:column;align-items:center;text-align:center;gap:6px;padding:6px 0 18px}
+.acct-hero b{font-size:20px;font-weight:800}
+.acct-hero small{color:var(--mute);font-size:13px}
+.acct-hero .st{display:flex;align-items:center;gap:6px;font-size:12.5px;color:var(--ink2);background:var(--soft);border-radius:20px;padding:4px 12px;margin-top:4px}
+.acct-list{display:flex;flex-direction:column;gap:8px}
+.uname-wrap{display:flex;align-items:center;border:1px solid var(--line2);border-radius:14px;padding-left:14px;background:#fff;transition:border-color .15s,box-shadow .15s}
+.uname-wrap:focus-within{border-color:var(--text);box-shadow:0 0 0 3px rgba(17,19,24,.07)}
+.uname-wrap span{color:var(--mute);font-weight:700}
+.uname-wrap input{border:0!important;box-shadow:none!important;padding-left:4px;font-weight:700}
+.uhint{font-size:12.5px;color:var(--mute);margin:8px 0 16px;min-height:18px}
+.uhint.err{color:var(--danger)}
+.uhint.ok{color:var(--ok-ink)}
+.info{background:var(--soft);border-radius:14px;padding:12px 14px;font-size:13.5px;color:var(--ink2);line-height:1.5;margin-bottom:14px}
+
+/* ===== HP & tablet (< 1024px) ===== */
+@media (max-width:1023.98px){
+body{padding-bottom:calc(92px + env(safe-area-inset-bottom))}
+main{max-width:760px;margin:0 auto;padding:0 16px}
+aside.side{display:none}
+.wrap{max-width:760px;margin:0 auto;padding:0 16px}
+header{position:sticky;top:0;z-index:20;background:rgba(255,255,255,.92);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-bottom:1px solid var(--line)}
+header .wrap{display:flex;align-items:center;gap:10px;height:62px}
+header .acct-slot{margin-left:auto}
+nav.bottom{position:fixed;left:0;right:0;bottom:0;z-index:30;background:#fff;border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom)}
+nav.bottom .wrap{display:grid;grid-template-columns:repeat(3,1fr)}
+nav.bottom button{background:none;border:0;padding:11px 0 13px;display:flex;flex-direction:column;align-items:center;gap:3px;color:#6B7180;font-size:12px;font-weight:600}
+nav.bottom button svg{width:23px;height:23px}
+nav.bottom button.on{color:var(--acc-ink);font-weight:700}
+.selbar{top:62px}
+.modal{align-items:flex-end}
+.sheet{max-width:760px;max-height:92vh;border-radius:24px 24px 0 0}
+#timer{left:0;right:0;bottom:calc(74px + env(safe-area-inset-bottom))}
+#timer .in{max-width:760px;margin:0 auto;padding:0 14px}
+.seg button{font-size:12.5px}
+
+}
+@media (max-width:420px){ .cfg-grid{grid-template-columns:1fr} }
+@media (min-width:800px) and (max-width:1023.98px){ .modal{align-items:center} .sheet{border-radius:24px;max-height:88vh} .sheet.narrow{max-width:440px} }
+/* ===== Laptop / PC (>= 1024px) ===== */
+@media (min-width:1024px){
+body{display:grid;grid-template-columns:248px 1fr;min-height:100vh;background:var(--soft)}
+::-webkit-scrollbar{width:10px;height:10px}::-webkit-scrollbar-thumb{background:#D5D8DE;border-radius:10px}::-webkit-scrollbar-track{background:transparent}
+header,nav.bottom{display:none}
+
+/* menu samping */
+aside.side{position:sticky;top:0;height:100vh;background:#fff;border-right:1px solid var(--line);display:flex;flex-direction:column;padding:24px 16px;overflow:auto}
+aside.side .logo{font-size:22px;padding:0 10px 24px}
+nav.sidenav{display:flex;flex-direction:column;gap:4px}
+nav.sidenav button{display:flex;align-items:center;gap:12px;background:none;border:0;border-radius:14px;height:46px;padding:0 12px;color:var(--ink2);font-size:14.5px;font-weight:600;text-align:left}
+nav.sidenav button svg{width:20px;height:20px;flex:none}
+nav.sidenav button:hover{background:var(--soft)}
+nav.sidenav button.on{background:var(--acc-soft);color:var(--acc-deep);font-weight:700}
+.side-foot{margin-top:auto;display:flex;flex-direction:column;gap:6px;padding-top:20px}
+.side-foot .section-t{margin:14px 6px 4px}
+.side-foot .btn{text-align:left;width:100%;border-color:transparent;background:transparent;color:var(--ink2)}
+.side-foot .btn:hover{background:var(--soft)}
+.side-foot .btn.danger{color:var(--danger)}
+.side-foot .dbstat{padding:12px 6px 0;border-top:1px solid var(--line);margin-top:8px;flex-wrap:wrap}
+
+main{padding:30px 40px 48px;min-width:0}
+.wrap-d{max-width:1360px;margin:0 auto}
+.hello{margin-top:0}
+.hello h1{font-size:34px;letter-spacing:-.8px}
+.page-head{display:flex;align-items:flex-end;gap:16px;margin-bottom:6px;flex-wrap:wrap}
+.page-head h1{font-size:30px;font-weight:800;letter-spacing:-.6px;margin:0}
+.page-head .sub{margin:0 0 5px}
+h2{font-size:24px}
+
+.days{gap:10px;margin:18px 0}
+.chip-day{padding:12px 4px;font-size:12px;border-radius:16px;background:#fff}
+.chip-day b{font-size:15px}
+.chip-day:hover:not(.on){border-color:#C9CDD6}
+
+/* latihan */
+.lat-grid{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:24px;align-items:start}
+.lat-side{position:sticky;top:30px;display:flex;flex-direction:column;gap:14px}
+.exlist{display:grid;grid-template-columns:repeat(auto-fill,minmax(380px,1fr));gap:14px;--thumb:132px}
+.exlist .card{margin:0}
+.daybig{max-width:760px}
+.desc-card{margin-top:0}
+
+/* atur jadwal: papan minggu */
+.week{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:10px;margin:18px 0 20px}
+.wk{background:#fff;border:1px solid var(--line);border-radius:18px;padding:12px;cursor:pointer;min-height:156px;display:flex;flex-direction:column;transition:border-color .15s;box-shadow:var(--shadow)}
+.wk:hover{border-color:#C9CDD6}
+.wk.on{border-color:var(--text);box-shadow:inset 0 0 0 1px var(--text)}
+.wk-h{display:flex;justify-content:space-between;align-items:center;font-size:12px;font-weight:600;color:var(--mute)}
+.wk-h em{font-style:normal;font-size:10.5px;font-weight:700;color:var(--acc-ink);background:var(--acc-soft);border-radius:20px;padding:1px 7px}
+.wk-l{font-weight:800;font-size:15px;margin:4px 0 8px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.wk.t-activity .wk-l{color:var(--blue)}
+.wk.t-rest .wk-l{color:var(--mute)}
+.wk ul{list-style:none;margin:0;padding:0;font-size:12px;color:var(--ink2)}
+.wk li{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding:3px 0;border-top:1px solid var(--line)}
+.wk li.more{color:var(--mute)}
+.wk p{margin:0;font-size:12px;color:var(--mute);display:-webkit-box;-webkit-line-clamp:5;-webkit-box-orient:vertical;overflow:hidden;white-space:pre-line}
+
+.split{display:grid;grid-template-columns:minmax(0,1fr) 360px;gap:22px;align-items:start}
+.daycfg{padding:18px}
+.daycfg .cfg-grid{grid-template-columns:1.2fr 1fr}
+.selbar{top:0;background:var(--soft)}
+
+/* tabel gerakan */
+.exrow{display:grid;grid-template-columns:22px 18px 70px minmax(140px,1fr) 56px 82px 76px 110px;gap:10px;align-items:center;background:#fff;border:1px solid var(--line);border-radius:16px;padding:10px 12px;margin-bottom:8px;box-shadow:var(--shadow)}
+.exrow .num{font-size:12px;color:var(--acc-ink);font-weight:700;text-align:center}
+.exrow .thumb{cursor:pointer}
+.exrow .thumb .media{border-radius:11px}
+.exrow .nm{min-width:0}
+.exrow .nm .ex-name{font-size:14.5px;cursor:pointer}
+.exrow .nm input{margin-top:6px;padding:7px 10px;font-size:13px;border-radius:10px}
+.exrow input[type=number],.exrow input[type=text]{padding:8px 10px;border-radius:10px}
+.exrow .acts{display:flex;gap:4px}
+.exrow.warn{border-color:#FCD34D;background:#FFFBEB}
+.exhead{display:grid;grid-template-columns:22px 18px 70px minmax(140px,1fr) 56px 82px 76px 110px;gap:10px;padding:0 12px 6px;font-size:11.5px;font-weight:600;color:var(--mute)}
+
+/* panel pustaka samping */
+.libpanel{position:sticky;top:30px;background:#fff;border:1px solid var(--line);border-radius:20px;padding:16px;max-height:calc(100vh - 60px);display:flex;flex-direction:column;box-shadow:var(--shadow)}
+.lp-h{display:flex;align-items:baseline;gap:8px;margin-bottom:4px}
+.lp-h b{font-size:15px;font-weight:800}
+.lp-h .sub{margin:0}
+.libpanel .filters{margin:8px 0 10px}
+.lp-on{display:flex;flex-direction:column;min-height:0;flex:1}
+#sideRes{overflow:auto;min-height:0;flex:1;margin-right:-6px;padding-right:6px}
+.lp-off{display:none;color:var(--mute);font-size:13.5px;padding:20px 4px;text-align:center}
+.libpanel.disabled .lp-on{display:none}
+.libpanel.disabled .lp-off{display:block}
+.lrow{display:flex;align-items:center;gap:10px;padding:6px;border-radius:12px;cursor:pointer}
+.lrow:hover{background:var(--soft)}
+.lrow .media{width:56px;flex:none;border-radius:10px}
+.lrow .media .play{display:none}
+.lr-t{flex:1;min-width:0;font-size:13px;font-weight:700;line-height:1.3}
+.lr-t small{display:block;font-weight:500;color:var(--mute);font-size:11.5px}
+.lrow .btn{width:34px;height:34px;padding:0;font-size:18px;flex:none;border-radius:10px}
+
+/* pustaka */
+.libgrid{grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:14px}
+.filters.wide{grid-template-columns:2fr 1fr 1fr;max-width:900px}
+.filters.wide .full{grid-column:auto}
+
+/* modal */
+.modal{align-items:center}
+.sheet{max-width:960px;max-height:88vh;border-radius:24px;padding:0 26px 26px}
+.sheet.narrow{max-width:440px}
+.detail-grid{display:grid;grid-template-columns:380px 1fr;gap:26px;align-items:start}
+.detail-grid .media.big{width:100%}
+
+#timer{right:28px;bottom:28px;width:420px}
+#toast{top:24px}
+footer{text-align:left}
+
+}
+@media (min-width:1024px) and (max-width:1439.98px){ .split{grid-template-columns:minmax(0,1fr) 310px} main{padding:24px 24px 40px} .lat-grid{grid-template-columns:minmax(0,1fr) 290px} }
+@media (min-width:1024px) and (max-width:1299.98px){
+  .split{grid-template-columns:1fr} .libpanel{position:static;max-height:none} #sideRes{max-height:460px}
+  .week{gap:6px} .wk{padding:9px;min-height:132px} .exlist{grid-template-columns:1fr}
+}
+
+</style>
+</head>
+<body>
+<header><div class="wrap"><div class="logo">Lift<span>Plan</span></div><div class="acct-slot" id="acctTop"></div></div></header>
+<aside class="side">
+  <div class="logo">Lift<span>Plan</span></div>
+  <nav class="sidenav"><button data-act="tab" data-tab="latihan"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 7v10M18 7v10M3 10v4M21 10v4M6 12h12"/></svg>Latihan hari ini</button><button data-act="tab" data-tab="atur"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4M8 15h3"/></svg>Atur jadwal</button><button data-act="tab" data-tab="pustaka"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="6"/><path d="m20 20-4.5-4.5"/></svg>Pustaka gerakan</button></nav>
+  <div class="side-foot">
+    <div id="acctSide"></div>
+    <div class="section-t">Data</div>
+    <button class="btn" data-act="export">⬇ Ekspor jadwal</button>
+    <button class="btn" data-act="import">⬆ Impor jadwal</button>
+    <button class="btn" data-act="reloadDB">↻ Perbarui database</button>
+    <button class="btn danger" data-act="reset">Reset ke template PPL</button>
+    <div class="dbstat"><i class="dot load"></i><span>Memuat database…</span></div>
+  </div>
+</aside>
+<main id="main"></main>
+<nav class="bottom"><div class="wrap"><button data-act="tab" data-tab="latihan"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 7v10M18 7v10M3 10v4M21 10v4M6 12h12"/></svg>Latihan</button><button data-act="tab" data-tab="atur"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4M8 15h3"/></svg>Atur Jadwal</button><button data-act="tab" data-tab="pustaka"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="6"/><path d="m20 20-4.5-4.5"/></svg>Pustaka</button></div></nav>
+<div id="timer"><div class="in"><div class="bar">
+  <div class="big" id="tBig">0:00</div><div class="lbl" id="tLbl">Istirahat</div>
+  <button class="btn sm" data-act="timerAdd">+15 dtk</button><button class="btn sm" data-act="timerSkip">Lewati</button>
+</div></div></div>
+<div class="modal" id="m1"><div class="sheet" id="m1s"></div></div>
+<div class="modal" id="m2"><div class="sheet" id="m2s"></div></div>
+<div id="toast"></div>
+<input type="file" id="importFile" accept="application/json,.json" hidden>
+<script>
+/* ============ KONFIGURASI ============ */
+/* Satu tampilan untuk semua perangkat: layar >= 1024px pakai tata letak laptop, di bawahnya tata letak HP */
+const MQ = window.matchMedia('(min-width: 1024px)');
+let DESK = MQ.matches;
+const REPO = 'https://raw.githubusercontent.com/hasaneyldrm/exercises-dataset/main/';
+const DB_URL = REPO + 'data/exercises.json';
+const K = {plan:'gp2_plan', db:'gp2_db', log:'gp2_log'};
+const DAYS = ['Senin','Selasa','Rabu','Kamis','Jumat','Sabtu','Minggu'];
+const DAYS_S = ['Sen','Sel','Rab','Kam','Jum','Sab','Min'];
+const TYPES = {
+  gym:{ic:'🏋️',name:'Latihan gym',label:'Push, Pull, Legs, Upper…',desc:'mis. Pemanasan 10 menit treadmill, naikkan beban 2,5 kg kalau semua set lancar…'},
+  activity:{ic:'🏃',name:'Aktivitas lain',label:'Lari, Renang, Futsal…',desc:'mis. Lari 5 km santai, pace ±6:30/km, lalu peregangan 10 menit'},
+  rest:{ic:'😴',name:'Libur',label:'Libur',desc:'mis. Istirahat total / jalan santai 20 menit / foam rolling'}
+};
+const PRESETS = ['Lari','Jalan kaki','Bersepeda','Renang','Futsal','Badminton','Yoga / stretching','Kardio','Hiking'];
+
+const MUSCLE_ID = {
+  abs:'Perut', abductors:'Paha luar', adductors:'Paha dalam', biceps:'Bisep', calves:'Betis',
+  'cardiovascular system':'Kardio', delts:'Bahu (deltoid)', forearms:'Lengan bawah', glutes:'Bokong',
+  hamstrings:'Paha belakang', lats:'Punggung (lats)', 'levator scapulae':'Leher (levator scapulae)',
+  pectorals:'Dada', 'pectoralis major':'Dada', chest:'Dada', 'upper chest':'Dada atas', quads:'Paha depan', quadriceps:'Paha depan',
+  'serratus anterior':'Serratus (rusuk samping)', spine:'Punggung bawah', 'lower back':'Punggung bawah',
+  traps:'Trapezius', trapezius:'Trapezius', triceps:'Trisep', 'upper back':'Punggung atas', back:'Punggung',
+  'hip flexors':'Pinggul depan', shoulders:'Bahu', 'rear deltoids':'Bahu belakang', 'rotator cuff':'Rotator cuff',
+  obliques:'Perut samping', core:'Core', 'lower abs':'Perut bawah', 'inner thighs':'Paha dalam', groin:'Selangkangan',
+  wrists:'Pergelangan tangan', 'wrist flexors':'Fleksor pergelangan', 'wrist extensors':'Ekstensor pergelangan',
+  ankles:'Pergelangan kaki', 'ankle stabilizers':'Stabilisator pergelangan kaki', soleus:'Betis (soleus)',
+  brachialis:'Brachialis', sternocleidomastoid:'Leher', hands:'Tangan', feet:'Kaki', shins:'Tulang kering'
+};
+const BODY_ID = {
+  back:'Punggung', cardio:'Kardio', chest:'Dada', 'lower arms':'Lengan bawah', 'lower legs':'Betis / kaki bawah',
+  neck:'Leher', shoulders:'Bahu', 'upper arms':'Lengan atas', 'upper legs':'Paha', waist:'Perut / pinggang'
+};
+const EQUIP_ID = {
+  assisted:'Dibantu (assisted)', band:'Band', barbell:'Barbel', 'body weight':'Tanpa alat', 'bosu ball':'Bosu ball',
+  cable:'Kabel', dumbbell:'Dumbel', 'elliptical machine':'Mesin elliptical', 'ez barbell':'EZ bar', hammer:'Palu',
+  kettlebell:'Kettlebell', 'leverage machine':'Mesin (lever)', 'medicine ball':'Medicine ball', 'olympic barbell':'Barbel olimpiade',
+  'resistance band':'Resistance band', roller:'Roller', rope:'Tali', 'skierg machine':'Mesin SkiErg', 'sled machine':'Mesin sled',
+  'smith machine':'Smith machine', 'stability ball':'Gym ball', 'stationary bike':'Sepeda statis', 'stepmill machine':'Mesin stepmill',
+  tire:'Ban', 'trap bar':'Trap bar', 'upper body ergometer':'Ergometer tubuh atas', weighted:'Beban tambahan', 'wheel roller':'Ab roller', other:'Lainnya'
+};
+
+/* Nama Indonesia — dikunci ke nama gerakan di database, jadi selalu cocok dengan animasinya */
+const ALIAS_RAW = {
+  'barbell bench press':'Bench press barbel',
+  'dumbbell incline bench press':'Incline press dumbel (dada atas)',
+  'dumbbell seated shoulder press':'Shoulder press dumbel duduk',
+  'dumbbell lateral raise':'Angkat samping (bahu samping)',
+  'cable pushdown':'Pushdown trisep kabel',
+  'triceps dip':'Dips trisep',
+  'chest dip':'Dips dada',
+  'pull-up':'Pull-up',
+  'barbell bent over row':'Row barbel membungkuk',
+  'cable seated row':'Row kabel duduk',
+  'cable rear delt row (with rope)':'Face pull / row bahu belakang (tali)',
+  'barbell curl':'Curl barbel (bisep)',
+  'dumbbell hammer curl':'Hammer curl dumbel',
+  'barbell full squat':'Squat barbel',
+  'barbell romanian deadlift':'Romanian deadlift (paha belakang)',
+  'sled 45° leg press':'Leg press 45°',
+  'lever lying leg curl':'Leg curl tengkurap',
+  'lever leg extension':'Leg extension (paha depan)',
+  'lever standing calf raise':'Jinjit berdiri mesin (betis)',
+  'barbell standing calf raise':'Jinjit berdiri barbel (betis)',
+  'barbell deadlift':'Deadlift barbel',
+  'cable pulldown':'Lat pulldown kabel',
+  'dumbbell fly':'Fly dumbel',
+  'push-up':'Push-up',
+  'dumbbell biceps curl':'Curl dumbel (bisep)',
+  'lever seated leg curl':'Leg curl duduk',
+  '3/4 sit-up':'Sit-up 3/4'
+};
+
+/* Template PPL. ids = ID yang sudah dipastikan, names = nama-nama yang dicari di database */
+const T = (ids,names,sets,reps,rest)=>({ids,names,sets,reps,rest});
+const PUSH = [
+  T(['0025'],['barbell bench press'],4,'8',120),
+  T([],['dumbbell incline bench press','incline dumbbell press'],3,'10',90),
+  T([],['dumbbell seated shoulder press','dumbbell shoulder press'],3,'10',90),
+  T(['0334'],['dumbbell lateral raise'],3,'15',60),
+  T([],['cable pushdown','cable triceps pushdown','cable pushdown (with rope attachment)'],3,'12',60),
+  T([],['triceps dip','chest dip'],3,'10',90)
+];
+const PULL = [
+  T(['0652'],['pull-up'],4,'8',120),
+  T([],['barbell bent over row'],4,'8',120),
+  T([],['cable seated row'],3,'12',90),
+  T([],['cable rear delt row (with rope)','cable standing rear delt row (with rope)','face pull'],3,'15',60),
+  T([],['barbell curl'],3,'10',60),
+  T([],['dumbbell hammer curl','hammer curl'],3,'12',60)
+];
+const LEGS = [
+  T(['0043'],['barbell full squat'],4,'8',150),
+  T([],['barbell romanian deadlift','romanian deadlift'],3,'10',120),
+  T([],['sled 45° leg press','sled 45 degrees leg press','leg press'],3,'12',90),
+  T([],['lever lying leg curl'],3,'12',60),
+  T([],['lever leg extension'],3,'12',60),
+  T([],['lever standing calf raise','barbell standing calf raise'],4,'15',60)
+];
+const TEMPLATE = [
+  {type:'gym',label:'Push',ex:PUSH},{type:'gym',label:'Pull',ex:PULL},{type:'gym',label:'Legs',ex:LEGS},
+  {type:'gym',label:'Push',ex:PUSH},{type:'gym',label:'Pull',ex:PULL},{type:'gym',label:'Legs',ex:LEGS},
+  {type:'activity',label:'Lari',desc:'Lari santai 20–30 menit (opsional), lalu peregangan 10 menit.',ex:[]}
+];
+
+/* ============ UTIL ============ */
+const $ = s=>document.querySelector(s);
+const esc = s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const norm = s=>String(s||'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();
+const cap = s=>String(s||'').replace(/(^|[\s(\/-])([a-z])/g,(m,a,b)=>a+b.toUpperCase());
+const uid = ()=>Math.random().toString(36).slice(2,10);
+const todayIdx = ()=>(new Date().getDay()+6)%7;
+const dateKey = ()=>{const d=new Date();return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate()};
+const fmt = s=>Math.floor(s/60)+':'+String(s%60).padStart(2,'0');
+const lbl = (map,v)=>map[String(v||'').toLowerCase()]||cap(v||'');
+const media = p=>!p?'':(/^https?:/.test(p)?p:REPO+String(p).replace(/^\/+/,''));
+const ALIAS = Object.fromEntries(Object.entries(ALIAS_RAW).map(([k,v])=>[norm(k),v]));
+const aliasOf = e=>e?ALIAS[e._n]||'':'';
+const store = {
+  get(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}},
+  set(k,v){try{localStorage.setItem(k,JSON.stringify(v));return true}catch(e){return false}}
+};
+function toast(msg){const t=$('#toast');t.textContent=msg;t.classList.add('show');clearTimeout(toast._t);toast._t=setTimeout(()=>t.classList.remove('show'),1800)}
+
+/* ============ DATA ============ */
+let DB=[], BYID=new Map(), dbState='load';
+let log = store.get(K.log, {date:'',done:{}});
+if(log.date!==dateKey()) log={date:dateKey(),done:{}};
+
+const state = {
+  tab:'latihan', day:todayIdx(), editDay:todayIdx(), sel:new Set(), lockModal:false,
+  lib:{q:'',bp:'',eq:'',limit:60}, side:{q:'',bp:'',eq:'',limit:40}, pick:null, lastDb:null
+};
+
+function newPlanFromTemplate(){
+  return {days: TEMPLATE.map(d=>({
+    type:d.type, label:d.label, desc:d.desc||'',
+    ex:d.ex.map(t=>({uid:uid(), id:null, cand:{ids:t.ids,names:t.names}, name:cap(t.names[0]), sets:t.sets, reps:t.reps, rest:t.rest, note:''}))
+  }))};
+}
+function normPlan(p){
+  if(!p || !Array.isArray(p.days) || p.days.length!==7) return null;
+  p.days.forEach(d=>{
+    if(!TYPES[d.type]) d.type = d.rest ? 'rest' : 'gym';
+    delete d.rest;
+    d.label = d.label||''; d.desc = d.desc||'';
+    d.ex = (Array.isArray(d.ex)?d.ex:[]).map(x=>({uid:x.uid||uid(),id:x.id||null,name:x.name||'',sets:x.sets||3,reps:x.reps||'10',rest:x.rest??90,note:x.note||'',...(x.cand?{cand:x.cand}:{})}));
+  });
+  return p;
+}
+let plan = normPlan(store.get(K.plan,null)) || newPlanFromTemplate();
+function savePlan(){ if(!store.set(K.plan,plan)) toast('Gagal menyimpan (penyimpanan browser penuh/diblokir)'); if(typeof cloudSave==='function') cloudSave(); }
+function saveLog(){ store.set(K.log,log); }
+const dayTitle = d => d.label || (d.type==='rest'?'Libur':d.type==='activity'?'Aktivitas':'Latihan');
+
+function stepsOf(e){
+  const st=e.instruction_steps && (e.instruction_steps.en||e.instruction_steps);
+  if(Array.isArray(st) && st.length) return st.map(String);
+  let t=e.instructions;
+  if(t && typeof t==='object' && !Array.isArray(t)) t=t.en||'';
+  if(Array.isArray(t)) return t.map(String);
+  return String(t||'').split(/(?<=[.!?])\s+(?=[A-Z0-9])/).map(x=>x.trim()).filter(Boolean);
+}
+function slimDB(data){
+  const arr=Array.isArray(data)?data:(data.exercises||data.data||[]);
+  return arr.filter(e=>e&&e.id!=null&&e.name).map(e=>({
+    id:String(e.id), name:String(e.name), bp:e.body_part||e.category||'', eq:e.equipment||'',
+    target:e.target||'', sec:Array.isArray(e.secondary_muscles)?e.secondary_muscles:[],
+    steps:stepsOf(e), img:e.image||'', gif:e.gif_url||''
+  }));
+}
+function indexDB(list){
+  DB=list; BYID=new Map(DB.map(e=>[e.id,e]));
+  for(const e of DB){
+    e._n=norm(e.name);
+    const mus=[e.target,...e.sec];
+    e._hay=norm([e.name, ALIAS[e._n]||'', mus.join(' '), mus.map(m=>MUSCLE_ID[String(m).toLowerCase()]||'').join(' '),
+      e.bp, BODY_ID[String(e.bp).toLowerCase()]||'', e.eq, EQUIP_ID[String(e.eq).toLowerCase()]||''].join(' '));
+  }
+}
+
+/* Cocokkan item template ke database: ID dulu, lalu nama persis, lalu nama paling mirip */
+function resolveItem(c){
+  for(const id of c.ids||[]) if(BYID.has(id)) return BYID.get(id);
+  const names=(c.names||[]).map(norm);
+  for(const n of names){ const e=DB.find(x=>x._n===n); if(e) return e; }
+  let best=null,bs=0;
+  for(const n of names){
+    const qt=n.split(' ');
+    for(const e of DB){
+      const et=e._n.split(' ');
+      const s=qt.filter(t=>et.includes(t)).length/Math.max(qt.length,et.length);
+      if(s>bs){bs=s;best=e}
+    }
+  }
+  return bs>=0.6?best:null;
+}
+function resolvePending(){
+  let changed=false;
+  for(const d of plan.days) for(const it of d.ex){
+    if(it.cand){
+      const e=resolveItem(it.cand);
+      if(e){it.id=e.id; it.name=cap(e.name)}
+      delete it.cand; changed=true;
+    } else if(it.id && BYID.has(it.id)) it.name=cap(BYID.get(it.id).name);
+  }
+  if(changed) savePlan();
+}
+
+async function loadDB(force){
+  setDbStat('load');
+  if(!force){
+    const cached=store.get(K.db,null);
+    if(Array.isArray(cached) && cached.length>100){ indexDB(cached); resolvePending(); setDbStat('ok'); render(); return; }
+  }
+  try{
+    const r=await fetch(DB_URL,{cache:'no-cache'});
+    if(!r.ok) throw new Error('HTTP '+r.status);
+    const slim=slimDB(await r.json());
+    if(!slim.length) throw new Error('kosong');
+    indexDB(slim); store.set(K.db,slim); resolvePending(); setDbStat('ok');
+    if(force) toast('Database diperbarui: '+DB.length+' gerakan');
+  }catch(err){
+    console.error(err);
+    if(!DB.length) setDbStat('err'); else { setDbStat('ok'); toast('Gagal memperbarui, memakai data tersimpan'); }
+  }
+  render();
+}
+function setDbStat(s){
+  dbState=s;
+  const html = s==='load' ? '<i class="dot load"></i><span>Memuat database…</span>'
+    : s==='ok' ? '<i class="dot ok"></i><span>'+DB.length+' gerakan</span>'
+    : '<i class="dot err"></i><span>Offline</span> <button class="btn sm" data-act="reloadDB">Coba lagi</button>';
+  document.querySelectorAll('.dbstat').forEach(el=>el.innerHTML=html);
+}
+
+/* ============ KOMPONEN ============ */
+const exOf = it=> it && it.id ? BYID.get(it.id) : null;
+const exName = it=>{const e=exOf(it);return e?cap(e.name):it.name};
+function mediaHTML(e,mode,cls=''){
+  if(!e) return `<div class="media empty ${cls}"><span>${dbState==='load'?'Memuat…':dbState==='err'?'Animasi belum termuat':'Belum dipilih'}</span></div>`;
+  const src = mode==='thumb' ? (e.img||e.gif) : (e.gif||e.img);
+  if(!src) return `<div class="media empty ${cls}"><span>Tidak ada animasi</span></div>`;
+  return `<div class="media ${cls}">${mode==='thumb'&&e.gif?'<span class="play">▶ animasi</span>':''}`+
+    `<img loading="lazy" src="${esc(media(src))}" alt="Animasi ${esc(cap(e.name))}" onerror="this.parentNode.classList.add('err')"></div>`;
+}
+function muscleTags(e,full){
+  if(!e) return '';
+  let h=e.target?`<span class="tag p">${esc(lbl(MUSCLE_ID,e.target))}</span>`:'';
+  if(full) h+=e.sec.filter(m=>String(m).toLowerCase()!==String(e.target).toLowerCase()).map(m=>`<span class="tag">${esc(lbl(MUSCLE_ID,m))}</span>`).join('');
+  return h;
+}
+function dayChips(sel,act){
+  return `<div class="days">`+plan.days.map((d,i)=>
+    `<button class="chip-day t-${d.type} ${i===sel?'on':''} ${i===todayIdx()?'today':''}" data-act="${act}" data-d="${i}" title="${esc(DAYS[i]+' · '+dayTitle(d))}">
+      ${DESK?DAYS[i]:DAYS_S[i]}<b>${d.type!=='gym'&&DESK?TYPES[d.type].ic+' ':''}${esc(dayTitle(d))}</b></button>`).join('')+`</div>`;
+}
+function nameBlock(e,it,missingMsg){
+  const missing=!e && dbState==='ok';
+  return `<div class="ex-name" ${e?`data-act="detail" data-id="${esc(e.id)}"`:''}>${esc(e?cap(e.name):it.name)}</div>
+    ${aliasOf(e)?`<div class="ex-alias">${esc(aliasOf(e))}</div>`:''}
+    ${missing?`<div class="ex-alias">${missingMsg}</div>`:''}`;
+}
+function dayOptions(selected){
+  return plan.days.map((d,i)=>`<option value="${i}" ${i===selected?'selected':''}>${DAYS[i]} (${esc(dayTitle(d))})</option>`).join('');
+}
+
+/* ============ TAB: LATIHAN ============ */
+function renderLatihan(){
+  const i=state.day, d=plan.days[i];
+  const nm=(typeof unameOf==='function')?unameOf():'';
+  const dt=new Date(); dt.setDate(dt.getDate()+(i-todayIdx()));
+  const dstr=dt.toLocaleDateString('id-ID',{weekday:'long',day:'numeric',month:'long'});
+  let h=`<div class="hello"><span>${nm?`Hai, <b>${esc(nm)}</b> · `:''}${i===todayIdx()?'Hari ini, ':''}${esc(dstr)}</span><h1>${esc(dayTitle(d))}${d.type==='gym'?' Day':''}</h1></div>`;
+  h+=dayChips(i,'day');
+  if(d.type!=='gym'){
+    const done=!!log.done['day'+i];
+    h+=`<p class="sub">${TYPES[d.type].name}${i===todayIdx()?' · hari ini':''}</p>
+      <div class="card daybig t-${d.type}">
+        <div class="ic" style="font-size:28px">${TYPES[d.type].ic}</div>
+        <div class="grow"><div class="t">${esc(dayTitle(d))}</div>
+          <div class="d ${d.desc?'':'empty'}">${d.desc?esc(d.desc):(d.type==='rest'?'Pemulihan juga bagian dari latihan.':'Belum ada keterangan. Isi di tab Atur Jadwal.')}</div></div>
+        ${d.type==='activity'?`<button class="btn ${done?'done-ok':'primary'}" data-act="actDone">${done?'✓ Selesai':'Tandai selesai'}</button>`:''}
+      </div>
+      <button class="btn" data-act="tab" data-tab="atur">Atur hari ini</button>`;
+    return h;
+  }
+  let total=0,done=0;
+  d.ex.forEach(it=>{const n=+it.sets||0;total+=n;done+=(log.done[it.uid]||[]).slice(0,n).filter(Boolean).length});
+  const pct= total?Math.round(done/total*100):0;
+  const exDone=d.ex.filter(it=>{const n=+it.sets||0;return n>0&&(log.done[it.uid]||[]).slice(0,n).filter(Boolean).length>=n}).length;
+  const mus=[...new Set(d.ex.map(it=>{const e=exOf(it);return e&&e.target?lbl(MUSCLE_ID,e.target):''}).filter(Boolean))].slice(0,3);
+  const mins=Math.round(d.ex.reduce((a,it)=>a+(+it.sets||0)*(45+(+it.rest||0)),0)/60);
+  const prog=`<div class="prog-card">
+      <div class="r"><span>Progres ${i===todayIdx()?'hari ini':DAYS[i]}</span><span>${done} / ${total} set</span></div>
+      <div class="big">${exDone} dari ${d.ex.length} gerakan</div>
+      <div class="progress"><i style="width:${pct}%"></i></div>
+      <div class="pills"><span>± ${mins} menit</span>${mus.length?`<span>${esc(mus.join(' · '))}</span>`:''}</div>
+    </div>`;
+  const desc=d.desc?`<div class="card desc-card"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16z"/></svg><div>${esc(d.desc)}</div></div>`:'';
+  const secH=`<div class="sec-h"><h3>Gerakan</h3><button data-act="tab" data-tab="atur">Ubah</button></div>`;
+  if(!d.ex.length) return h+desc+`<div class="card empty-state" style="margin-top:14px">Belum ada gerakan di hari ini.<br><br><button class="btn primary" data-act="tab" data-tab="atur">Atur jadwal</button></div>`;
+  let list=`<div class="exlist">`;
+  d.ex.forEach((it,k)=>{
+    const e=exOf(it), n=+it.sets||0, ds=log.done[it.uid]||[];
+    list+=`<div class="card ${!e&&dbState==='ok'?'warn':''}">
+      <div class="ex-head" ${e?`data-act="detail" data-id="${esc(e.id)}"`:''}>
+        ${mediaHTML(e,'gif')}
+        <div class="ex-info">
+          <div class="ex-num">Gerakan ${String(k+1).padStart(2,'0')}</div>
+          ${nameBlock(e,it,'Gerakan ini belum ditemukan di database. Pilih ulang di tab Atur Jadwal.')}
+          <div class="ex-meta"><b>${n} set × ${esc(it.reps)}</b> · istirahat ${fmt(+it.rest||0)}</div>
+          <div class="tags">${muscleTags(e)}</div>
+        </div>
+        ${n&&ds.slice(0,n).filter(Boolean).length>=n?'<span class="done-mark" aria-label="Selesai"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span>':''}
+      </div>
+      ${it.note?`<div class="note">${esc(it.note)}</div>`:''}
+      <div class="sets">${Array.from({length:n},(_,s)=>
+        `<button class="set ${ds[s]?'done':''}" data-act="set" data-uid="${it.uid}" data-s="${s}">${ds[s]?'✓ ':''}Set ${s+1}</button>`).join('')}
+      </div>
+    </div>`;
+  });
+  list+=`</div>`;
+  if(total && done===total) list+=`<div class="card empty-state" style="color:var(--ok-ink);font-weight:700;margin-top:12px">Semua set selesai. Mantap!</div>`;
+  if(DESK) h+=`<div class="lat-grid"><div>${desc}${secH}${list}</div><div class="lat-side">${prog}</div></div>`;
+  else h+=prog+desc+secH+list;
+  return h;
+}
+
+/* ============ TAB: ATUR JADWAL ============ */
+function daySettingsHTML(i){
+  const d=plan.days[i], ty=TYPES[d.type];
+  return `<div class="card daycfg">
+    <label class="f">Jenis hari · ${DAYS[i]}</label>
+    <div class="seg">${Object.entries(TYPES).map(([k,v])=>`<button class="${d.type===k?'on':''}" data-act="dtype" data-t="${k}">${v.ic} ${v.name}</button>`).join('')}</div>
+    <div class="cfg-grid">
+      <div><label class="f">Nama hari</label><input type="text" data-f="label" value="${esc(d.label)}" placeholder="${esc(ty.label)}"></div>
+      <div><label class="f">Salin isi dari hari lain</label>
+        <select data-f="copyfrom"><option value="">— pilih hari —</option>
+        ${plan.days.map((x,j)=>j===i?'':`<option value="${j}">${DAYS[j]} (${esc(dayTitle(x))})</option>`).join('')}</select></div>
+    </div>
+    ${d.type==='activity'?`<div class="presets">${PRESETS.map(p=>`<button class="tag-btn ${d.label===p?'on':''}" data-act="preset" data-p="${esc(p)}">${esc(p)}</button>`).join('')}</div>`:''}
+    <label class="f" style="margin-top:12px">Keterangan ${d.type==='gym'?'(opsional, tampil di atas daftar gerakan)':''}</label>
+    <textarea data-f="desc" rows="3" placeholder="${esc(ty.desc)}">${esc(d.desc)}</textarea>
+  </div>`;
+}
+function cleanSel(d){ for(const u of [...state.sel]) if(!d.ex.some(x=>x.uid===u)) state.sel.delete(u); }
+function selbarHTML(d){
+  const nSel=state.sel.size, all=d.ex.length>0 && nSel===d.ex.length;
+  return `<div class="selbar ${nSel?'active':''}">
+    <label class="selbox"><input type="checkbox" data-selall ${all?'checked':''}> Pilih semua</label>
+    <span class="n">${nSel} dipilih</span>
+    <button class="btn sm ${nSel?'danger-fill':'danger'}" data-act="delSel" ${nSel?'':'disabled'}>🗑 Hapus terpilih</button>
+  </div>`;
+}
+function dataToolsHTML(){
+  return `<button class="btn" data-act="export">⬇ Ekspor jadwal</button>
+    <button class="btn" data-act="import">⬆ Impor jadwal</button>
+    <button class="btn" data-act="reloadDB">↻ Perbarui database</button>
+    <button class="btn danger" data-act="reset">Reset ke template PPL</button>`;
+}
+
+/* --- versi HP --- */
+function renderAturMobile(){
+  const i=state.editDay, d=plan.days[i]; cleanSel(d);
+  let h=`<div class="hello"><span>Ketuk hari untuk mengubah isinya</span><h1>Atur Jadwal</h1></div>`+dayChips(i,'eday')+daySettingsHTML(i);
+  if(d.type==='gym'){
+    if(d.ex.length) h+=selbarHTML(d);
+    else h+=`<div class="section-t">Daftar gerakan</div><div class="card empty-state">Belum ada gerakan.</div>`;
+    d.ex.forEach((it,k)=>{
+      const e=exOf(it), on=state.sel.has(it.uid);
+      h+=`<div class="card ${on?'selected':''} ${!e&&dbState==='ok'?'warn':''}">
+        <div class="card-top">
+          <label class="selbox"><input type="checkbox" data-sel="${it.uid}" ${on?'checked':''}> Pilih</label>
+          <span class="ex-num">#${k+1}</span>
+        </div>
+        <div class="ex-head" ${e?`data-act="detail" data-id="${esc(e.id)}"`:''}>
+          ${mediaHTML(e,'gif')}
+          <div class="ex-info">
+            ${nameBlock(e,it,'Belum cocok dengan database. Tekan “Ganti gerakan”.')}
+            <div class="tags">${muscleTags(e)}</div>
+          </div>
+        </div>
+        <div class="grid3">
+          <div><label class="f">Set</label><input type="number" min="1" max="12" data-f="sets" data-uid="${it.uid}" value="${esc(it.sets)}"></div>
+          <div><label class="f">Repetisi</label><input type="text" data-f="reps" data-uid="${it.uid}" value="${esc(it.reps)}" placeholder="8-12 / 30 dtk"></div>
+          <div><label class="f">Istirahat (dtk)</label><input type="number" min="0" step="15" data-f="rest" data-uid="${it.uid}" value="${esc(it.rest)}"></div>
+        </div>
+        <div style="margin-top:8px"><input type="text" data-f="note" data-uid="${it.uid}" value="${esc(it.note)}" placeholder="Catatan (beban, tempo, tips)…"></div>
+        <div class="toolbar">
+          <button class="btn sm" data-act="up" data-uid="${it.uid}" ${k===0?'disabled':''}>▲</button>
+          <button class="btn sm" data-act="down" data-uid="${it.uid}" ${k===d.ex.length-1?'disabled':''}>▼</button>
+          <button class="btn sm" data-act="replace" data-uid="${it.uid}">🔄 Ganti gerakan</button>
+        </div>
+      </div>`;
+    });
+    h+=`<button class="btn primary block" data-act="add">+ Tambah gerakan</button>`;
+  }
+  h+=`<div class="section-t">Data</div><div class="toolbar">${dataToolsHTML()}</div>`;
+  return h;
+}
+
+/* --- versi laptop --- */
+function weekBoardHTML(){
+  return `<div class="week" id="weekBoard">${plan.days.map((d,i)=>`
+    <div class="wk t-${d.type} ${i===state.editDay?'on':''}" data-act="eday" data-d="${i}">
+      <div class="wk-h"><span>${DAYS[i]}</span>${i===todayIdx()?'<em>Hari ini</em>':''}</div>
+      <div class="wk-l">${TYPES[d.type].ic} ${esc(dayTitle(d))}</div>
+      ${d.type==='gym'
+        ? (d.ex.length?`<ul>${d.ex.slice(0,6).map(it=>`<li>${esc(exName(it))}</li>`).join('')}${d.ex.length>6?`<li class="more">+${d.ex.length-6} lagi</li>`:''}</ul>`:'<p>Belum ada gerakan</p>')
+        : `<p>${esc(d.desc||'')}</p>`}
+    </div>`).join('')}</div>`;
+}
+function editorHTML(){
+  const i=state.editDay, d=plan.days[i]; cleanSel(d);
+  let h=daySettingsHTML(i);
+  if(d.type!=='gym') return h;
+  if(!d.ex.length) return h+`<div class="card empty-state">Belum ada gerakan. Cari di panel pustaka sebelah kanan lalu tekan <b>+</b>.</div>`;
+  h+=selbarHTML(d);
+  h+=`<div class="exhead"><span></span><span>#</span><span>Animasi</span><span>Gerakan & catatan</span><span>Set</span><span>Repetisi</span><span>Istirahat (dtk)</span><span></span></div>`;
+  d.ex.forEach((it,k)=>{
+    const e=exOf(it), on=state.sel.has(it.uid);
+    h+=`<div class="exrow ${on?'selected':''} ${!e&&dbState==='ok'?'warn':''}">
+      <label class="selbox" title="Pilih"><input type="checkbox" data-sel="${it.uid}" ${on?'checked':''}></label>
+      <div class="num">${k+1}</div>
+      <div class="thumb" ${e?`data-act="detail" data-id="${esc(e.id)}"`:''}>${mediaHTML(e,'gif')}</div>
+      <div class="nm">
+        ${nameBlock(e,it,'Belum cocok dengan database. Tekan 🔄 untuk mengganti.')}
+        <div class="tags">${muscleTags(e)}</div>
+        <input type="text" data-f="note" data-uid="${it.uid}" value="${esc(it.note)}" placeholder="Catatan (beban, tempo, tips)…">
+      </div>
+      <input type="number" min="1" max="12" data-f="sets" data-uid="${it.uid}" value="${esc(it.sets)}" title="Set">
+      <input type="text" data-f="reps" data-uid="${it.uid}" value="${esc(it.reps)}" placeholder="8-12" title="Repetisi">
+      <input type="number" min="0" step="15" data-f="rest" data-uid="${it.uid}" value="${esc(it.rest)}" title="Istirahat (detik)">
+      <div class="acts">
+        <button class="btn sm" data-act="up" data-uid="${it.uid}" ${k===0?'disabled':''} title="Naikkan">▲</button>
+        <button class="btn sm" data-act="down" data-uid="${it.uid}" ${k===d.ex.length-1?'disabled':''} title="Turunkan">▼</button>
+        <button class="btn sm" data-act="replace" data-uid="${it.uid}" title="Ganti gerakan">🔄</button>
+      </div>
+    </div>`;
+  });
+  return h;
+}
+function renderAturDesk(){
+  const d=plan.days[state.editDay];
+  return `<div class="page-head"><h1>Atur Jadwal</h1><p class="sub">Klik kolom hari untuk mengedit. Gerakan ditambah dari panel “Tambah dari pustaka”.</p></div>
+    ${weekBoardHTML()}
+    <div class="split">
+      <section id="editorPane">${editorHTML()}</section>
+      <aside id="libPanel" class="libpanel ${d.type!=='gym'?'disabled':''}">
+        <div class="lp-h"><b>Tambah dari pustaka</b><span class="sub">→ <span id="lpDay">${DAYS[state.editDay]}</span></span></div>
+        <div class="lp-off">Ubah jenis hari menjadi “🏋️ Latihan gym” untuk menambah gerakan.</div>
+        <div class="lp-on">${dbState==='ok'?filtersHTML('side',state.side)+'<div id="sideRes"></div>':dbMsg()}</div>
+      </aside>
+    </div>`;
+}
+function refreshAturDesk(){
+  $('#weekBoard').outerHTML=weekBoardHTML();
+  $('#editorPane').innerHTML=editorHTML();
+  $('#libPanel').classList.toggle('disabled',plan.days[state.editDay].type!=='gym');
+  $('#lpDay').textContent=DAYS[state.editDay];
+}
+function renderSideResults(){
+  const box=$('#sideRes'); if(!box) return;
+  const f=state.side, res=searchDB(f);
+  box.innerHTML=countHTML(res.length,f,'side')+res.slice(0,f.limit).map(e=>`
+    <div class="lrow" data-act="detail" data-id="${esc(e.id)}">
+      ${mediaHTML(e,'thumb')}
+      <div class="lr-t">${esc(cap(e.name))}<small>${esc(aliasOf(e)||lbl(MUSCLE_ID,e.target))} · ${esc(lbl(EQUIP_ID,e.eq)||'—')}</small></div>
+      <button class="btn primary" data-act="quickAdd" data-id="${esc(e.id)}" title="Tambah ke hari yang dipilih">+</button>
+    </div>`).join('')+
+    (res.length>f.limit?`<button class="btn block" style="margin-top:8px" data-act="sideMore">Tampilkan lebih banyak</button>`:'');
+}
+
+/* ============ TAB: PUSTAKA ============ */
+function optionsOf(field,map){
+  const vals=[...new Set(DB.map(e=>String(e[field]||'').toLowerCase()).filter(Boolean))];
+  return vals.map(v=>[v,lbl(map,v)]).sort((a,b)=>a[1].localeCompare(b[1],'id'));
+}
+function filtersHTML(prefix,f,wide){
+  return `<div class="filters ${wide?'wide':''}">
+    <input class="full" type="search" id="${prefix}Q" value="${esc(f.q)}" placeholder="Cari: bench, squat, dada, bisep, dumbel…" autocomplete="off">
+    <select id="${prefix}B"><option value="">Semua bagian tubuh</option>${optionsOf('bp',BODY_ID).map(([v,l])=>`<option value="${esc(v)}" ${f.bp===v?'selected':''}>${esc(l)}</option>`).join('')}</select>
+    <select id="${prefix}E"><option value="">Semua alat</option>${optionsOf('eq',EQUIP_ID).map(([v,l])=>`<option value="${esc(v)}" ${f.eq===v?'selected':''}>${esc(l)}</option>`).join('')}</select>
+  </div>`;
+}
+function searchDB(f){
+  const toks=norm(f.q).split(' ').filter(Boolean);
+  let res=DB.filter(e=>{
+    if(f.bp && String(e.bp).toLowerCase()!==f.bp) return false;
+    if(f.eq && String(e.eq).toLowerCase()!==f.eq) return false;
+    return toks.every(t=>e._hay.includes(t));
+  });
+  if(toks.length){
+    const q=norm(f.q);
+    const score=e=>(e._n===q?0:e._n.startsWith(q)?1:e._n.includes(q)?2:ALIAS[e._n]?3:4);
+    res.sort((a,b)=>score(a)-score(b)||a.name.localeCompare(b.name));
+  } else {
+    res.sort((a,b)=>(ALIAS[a._n]?0:1)-(ALIAS[b._n]?0:1)||a.name.localeCompare(b.name));
+  }
+  return res;
+}
+function countHTML(n,f,scope){
+  if(n===0 && (f.bp||f.eq)){
+    const parts=[f.bp?('bagian tubuh “'+lbl(BODY_ID,f.bp)+'”'):'',f.eq?('alat “'+lbl(EQUIP_ID,f.eq)+'”'):''].filter(Boolean).join(' & ');
+    return `<div class="count">Tidak ada hasil dengan filter ${esc(parts)}. <button class="btn sm" data-act="clearF" data-scope="${scope}">Hapus filter</button></div>`;
+  }
+  return `<div class="count">${n} gerakan</div>`;
+}
+function libItemsHTML(list,act){
+  return list.map(e=>`<div class="libitem" data-act="${act}" data-id="${esc(e.id)}">
+    ${mediaHTML(e,'thumb')}
+    <div class="t">${esc(cap(e.name))}<small>${esc(aliasOf(e)||lbl(MUSCLE_ID,e.target))} · ${esc(lbl(EQUIP_ID,e.eq)||'—')}</small></div>
+  </div>`).join('');
+}
+function renderPustaka(){
+  if(dbState!=='ok') return dbMsg();
+  return (DESK?`<div class="page-head"><h1>Pustaka Gerakan</h1></div>`:`<div class="hello"><span>Animasi & cara melakukan setiap gerakan</span><h1>Pustaka Gerakan</h1></div>`)
+    +`<p class="sub">Klik gerakan untuk melihat animasi & cara melakukannya.</p>`
+    +filtersHTML('lib',state.lib,DESK)+`<div id="libRes"></div>`;
+}
+function renderLibResults(){
+  const box=$('#libRes'); if(!box) return;
+  const res=searchDB(state.lib);
+  box.innerHTML=countHTML(res.length,state.lib,'lib')+`<div class="libgrid">${libItemsHTML(res.slice(0,state.lib.limit),'detail')}</div>`+
+    (res.length>state.lib.limit?`<button class="btn block" style="margin-top:12px" data-act="libMore">Tampilkan lebih banyak</button>`:'');
+}
+function dbMsg(){
+  if(dbState==='load') return `<div class="card empty-state" style="margin-top:16px">Memuat database gerakan…</div>`;
+  return `<div class="banner">Database gerakan belum bisa dimuat. Pastikan perangkat tersambung ke internet, lalu tekan <b>Coba lagi</b>.<br><small>Kalau file ini dibuka di jendela pratinjau (misalnya pratinjau di aplikasi chat), akses internetnya biasanya diblokir. Unduh filenya dulu, lalu buka langsung di Chrome/Edge.</small></div>`;
+}
+
+/* ============ MODAL ============ */
+function openModal(n,html,cls){ $('#m'+n+'s').className='sheet '+(cls||''); $('#m'+n+'s').innerHTML=html; $('#m'+n).classList.add('open'); document.body.classList.add('lock'); $('#m'+n+'s').scrollTop=0; }
+function closeModal(n){ $('#m'+n).classList.remove('open'); $('#m'+n+'s').innerHTML=''; if(!$('#m1').classList.contains('open')&&!$('#m2').classList.contains('open')) document.body.classList.remove('lock'); }
+['m1','m2'].forEach(id=>$('#'+id).addEventListener('click',ev=>{ if(ev.target.id===id && !state.lockModal) closeModal(id.slice(1)); }));
+
+function openDetail(id,fromPicker){
+  const e=BYID.get(id); if(!e) return;
+  const layer=fromPicker?2:1;
+  const action = fromPicker
+    ? `<button class="btn primary block" data-act="pickThis" data-id="${esc(e.id)}">✓ Pilih gerakan ini</button>`
+    : `<div class="row"><select id="addDaySel" style="flex:1">${dayOptions(state.editDay)}</select>
+       <button class="btn primary" data-act="addToDay" data-id="${esc(e.id)}">+ Tambah ke hari</button></div>`;
+  openModal(layer,`
+    <div class="mhead"><b>${esc(cap(e.name))}</b><button class="x" data-act="close" data-l="${layer}">✕</button></div>
+    <div class="detail-grid">
+      <div>${mediaHTML(e,'gif','big')}</div>
+      <div>
+        <div style="margin-top:${DESK?0:12}px">
+          ${aliasOf(e)?`<div style="font-weight:600;margin-bottom:4px">${esc(aliasOf(e))}</div>`:''}
+          <div class="tags">${muscleTags(e,true)}</div>
+          <div class="tags">
+            <span class="tag">Bagian: ${esc(lbl(BODY_ID,e.bp)||'—')}</span>
+            <span class="tag">Alat: ${esc(lbl(EQUIP_ID,e.eq)||'—')}</span>
+          </div>
+        </div>
+        <div class="section-t">Cara melakukan <span style="text-transform:none;letter-spacing:0">(teks asli database, bahasa Inggris)</span></div>
+        <ol class="steps">${e.steps.map(s=>`<li>${esc(s)}</li>`).join('')||'<li>Tidak ada instruksi.</li>'}</ol>
+        <div style="margin-top:14px">${action}</div>
+      </div>
+    </div>`);
+}
+
+function openPicker(mode,day,uidRef){
+  if(dbState!=='ok'){ toast('Database belum dimuat'); return; }
+  state.pick={mode,day,uid:uidRef,f:{q:'',bp:'',eq:'',limit:60}};
+  const cur = mode==='replace' ? exOf(plan.days[day].ex.find(x=>x.uid===uidRef)) : null;
+  if(cur && cur.bp) state.pick.f.bp=String(cur.bp).toLowerCase();
+  openModal(1,`
+    <div class="mhead"><b>${mode==='replace'?'Ganti gerakan':'Tambah gerakan'} · ${DAYS[day]}</b><button class="x" data-act="close" data-l="1">✕</button></div>
+    ${cur?`<p class="sub">Sekarang: <b style="color:var(--text)">${esc(cap(cur.name))}</b>. Filter bagian tubuh sudah diisi otomatis, ubah kalau perlu.</p>`:'<p class="sub">Cari lalu klik gerakan untuk melihat animasinya, kemudian tekan “Pilih”.</p>'}
+    ${filtersHTML('pk',state.pick.f,DESK)}
+    <div id="pkRes"></div>`);
+  renderPickResults();
+  setTimeout(()=>{const q=$('#pkQ'); if(q && window.innerWidth>700) q.focus();},50);
+}
+function renderPickResults(){
+  const box=$('#pkRes'); if(!box||!state.pick) return;
+  const f=state.pick.f, res=searchDB(f);
+  box.innerHTML=countHTML(res.length,f,'pk')+`<div class="libgrid">${libItemsHTML(res.slice(0,f.limit),'preview')}</div>`+
+    (res.length>f.limit?`<button class="btn block" style="margin-top:12px" data-act="pkMore">Tampilkan lebih banyak</button>`:'');
+}
+function newItem(e){ return {uid:uid(),id:e.id,name:cap(e.name),sets:3,reps:'10',rest:90,note:''}; }
+function ensureGym(d){
+  if(d.type==='gym') return false;
+  d.type='gym'; if(!d.label||d.label==='Libur') d.label='Latihan'; return true;
+}
+function applyPick(id){
+  const e=BYID.get(id), p=state.pick; if(!e||!p) return;
+  const d=plan.days[p.day];
+  if(p.mode==='replace'){
+    const it=d.ex.find(x=>x.uid===p.uid);
+    if(it){ it.id=e.id; it.name=cap(e.name); delete it.cand; delete log.done[it.uid]; saveLog(); }
+    toast('Diganti: '+cap(e.name));
+  } else {
+    ensureGym(d); d.ex.push(newItem(e));
+    toast('Ditambahkan: '+cap(e.name));
+  }
+  savePlan(); closeModal(2); closeModal(1); state.pick=null; render();
+}
+
+/* ============ TIMER ISTIRAHAT ============ */
+const timer={end:0,iv:null};
+function startTimer(sec,name){
+  if(!sec) return;
+  timer.end=Date.now()+sec*1000;
+  $('#tLbl').textContent='Istirahat · '+name;
+  $('#timer').classList.remove('done'); $('#timer').classList.add('show');
+  clearInterval(timer.iv); timer.iv=setInterval(tick,250); tick();
+}
+function tick(){
+  const left=Math.max(0,Math.ceil((timer.end-Date.now())/1000));
+  $('#tBig').textContent=fmt(left);
+  if(left<=0){
+    clearInterval(timer.iv); timer.iv=null;
+    $('#timer').classList.add('done'); $('#tLbl').textContent='Waktu istirahat habis, lanjut set berikutnya 💪';
+    beep(); try{navigator.vibrate&&navigator.vibrate([200,100,200])}catch(e){}
+    setTimeout(()=>{ if(!timer.iv) $('#timer').classList.remove('show'); },5000);
+  }
+}
+function beep(){
+  try{
+    const ac=new (window.AudioContext||window.webkitAudioContext)();
+    [0,0.25].forEach(t=>{const o=ac.createOscillator(),g=ac.createGain();o.frequency.value=880;o.connect(g);g.connect(ac.destination);
+      g.gain.setValueAtTime(.25,ac.currentTime+t);g.gain.exponentialRampToValueAtTime(.001,ac.currentTime+t+.2);o.start(ac.currentTime+t);o.stop(ac.currentTime+t+.21)});
+  }catch(e){}
+}
+
+/* ============ RENDER UTAMA ============ */
+/* render tertunda: dipakai setelah kolom teks selesai diedit, supaya klik berikutnya tidak "hilang" karena tampilan diganti */
+let softT=null;
+function softRender(){ clearTimeout(softT); softT=setTimeout(()=>{ softT=null; if(!document.activeElement || !document.activeElement.matches('input[type=text],input[type=number],textarea')) render(); },300); }
+function render(){
+  clearTimeout(softT);
+  document.querySelectorAll('nav [data-act="tab"]').forEach(b=>b.classList.toggle('on',b.dataset.tab===state.tab));
+  /* laptop: di Atur Jadwal hanya bagian kiri yang diperbarui, panel pustaka tidak di-reset */
+  if(DESK && state.tab==='atur' && $('#editorPane') && state.lastDb===dbState){ refreshAturDesk(); return; }
+  state.lastDb=dbState;
+  let h = state.tab==='latihan'?renderLatihan()
+        : state.tab==='atur'?(DESK?renderAturDesk():renderAturMobile())
+        : renderPustaka();
+  if(state.tab!=='pustaka' && dbState==='err') h=dbMsg()+h;
+  h+=`<footer>Animasi gerakan: © Gym visual — <a href="https://gymvisual.com/" target="_blank" rel="noopener">gymvisual.com</a> ·
+    Dataset: <a href="https://github.com/hasaneyldrm/exercises-dataset" target="_blank" rel="noopener">hasaneyldrm/exercises-dataset</a><br>${(typeof cloud!=='undefined'&&cloud.user)?'Jadwal tersimpan di akun '+esc(unameOf()||'Anda')+'.':'Jadwal disimpan di perangkat ini. Masuk dengan Google supaya tersimpan di akun.'}</footer>`;
+  $('#main').innerHTML=DESK?`<div class="wrap-d">${h}</div>`:h;
+  if(state.tab==='pustaka') renderLibResults();
+  if(state.tab==='atur' && DESK) renderSideResults();
+}
+
+/* ============ EVENT ============ */
+const act = {
+  tab:t=>{state.tab=t.dataset.tab; state.lastDb=null; render(); scrollTo(0,0);},
+  day:t=>{state.day=+t.dataset.d; render();},
+  eday:t=>{state.editDay=+t.dataset.d; state.sel.clear(); render();},
+  detail:t=>openDetail(t.dataset.id,false),
+  preview:t=>openDetail(t.dataset.id,true),
+  pickThis:t=>applyPick(t.dataset.id),
+  close:t=>closeModal(t.dataset.l),
+  dtype:t=>{
+    const d=plan.days[state.editDay], ty=t.dataset.t; if(d.type===ty) return;
+    if(ty==='rest' && !d.label) d.label='Libur';
+    if(ty!=='rest' && d.label==='Libur') d.label='';
+    d.type=ty; state.sel.clear(); savePlan(); render();
+    if(ty!=='gym' && d.ex.length) toast('Daftar gerakan tetap tersimpan, muncul lagi kalau diubah ke Latihan gym');
+  },
+  preset:t=>{ plan.days[state.editDay].label=t.dataset.p; savePlan(); render(); },
+  actDone:()=>{ const k='day'+state.day; log.done[k]=!log.done[k]; saveLog(); render(); },
+  set:t=>{
+    const u=t.dataset.uid, s=+t.dataset.s;
+    const arr=log.done[u]||(log.done[u]=[]);
+    arr[s]=!arr[s]; saveLog();
+    const it=plan.days[state.day].ex.find(x=>x.uid===u);
+    if(arr[s] && it){
+      const n=+it.sets||0, doneCount=arr.slice(0,n).filter(Boolean).length, e=exOf(it);
+      startTimer(+it.rest||0, doneCount<n ? (e?cap(e.name):it.name) : 'lanjut gerakan berikutnya');
+    }
+    render();
+  },
+  up:t=>moveItem(t.dataset.uid,-1),
+  down:t=>moveItem(t.dataset.uid,1),
+  delSel:()=>{
+    const d=plan.days[state.editDay], n=state.sel.size; if(!n) return;
+    const names=d.ex.filter(x=>state.sel.has(x.uid)).map(x=>'• '+exName(x));
+    if(!confirm(`Hapus ${n} gerakan dari ${DAYS[state.editDay]}?\n\n${names.slice(0,8).join('\n')}${names.length>8?'\n…':''}`)) return;
+    d.ex=d.ex.filter(x=>!state.sel.has(x.uid));
+    state.sel.forEach(u=>delete log.done[u]); saveLog();
+    state.sel.clear(); savePlan(); render(); toast(n+' gerakan dihapus');
+  },
+  replace:t=>openPicker('replace',state.editDay,t.dataset.uid),
+  add:()=>openPicker('add',state.editDay),
+  quickAdd:t=>{
+    const e=BYID.get(t.dataset.id), d=plan.days[state.editDay]; if(!e) return;
+    ensureGym(d); d.ex.push(newItem(e)); savePlan(); render(); toast('Ditambahkan ke '+DAYS[state.editDay]+': '+cap(e.name));
+  },
+  addToDay:t=>{
+    const e=BYID.get(t.dataset.id), di=+$('#addDaySel').value, d=plan.days[di];
+    const changed=ensureGym(d); d.ex.push(newItem(e));
+    savePlan(); closeModal(1); toast('Ditambahkan ke '+DAYS[di]+(changed?' (jenis hari diubah ke Latihan gym)':'')); render();
+  },
+  clearF:t=>{
+    const sc=t.dataset.scope, f= sc==='lib'?state.lib : sc==='side'?state.side : (state.pick&&state.pick.f); if(!f) return;
+    f.bp='';f.eq='';
+    const b=$('#'+sc+'B'), e=$('#'+sc+'E'); if(b) b.value=''; if(e) e.value='';
+    ({lib:renderLibResults,side:renderSideResults,pk:renderPickResults})[sc]();
+  },
+  libMore:()=>{state.lib.limit+=60; renderLibResults();},
+  sideMore:()=>{state.side.limit+=40; renderSideResults();},
+  pkMore:()=>{state.pick.f.limit+=60; renderPickResults();},
+  timerAdd:()=>{ if(timer.iv) timer.end+=15000; else startTimer(15,'tambahan'); },
+  timerSkip:()=>{ clearInterval(timer.iv); timer.iv=null; $('#timer').classList.remove('show'); },
+  reloadDB:()=>loadDB(true),
+  export:()=>{
+    const blob=new Blob([JSON.stringify(plan,null,2)],{type:'application/json'});
+    const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='liftplan-jadwal.json'; a.click();
+    setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+  },
+  import:()=>$('#importFile').click(),
+  reset:()=>{
+    if(!confirm('Reset semua jadwal ke template Push/Pull/Legs? Perubahan Anda akan hilang.')) return;
+    plan=newPlanFromTemplate(); state.sel.clear(); if(DB.length) resolvePending(); savePlan(); state.lastDb=null; render(); toast('Jadwal direset');
+  }
+};
+function moveItem(u,dir){
+  const ex=plan.days[state.editDay].ex, i=ex.findIndex(x=>x.uid===u), j=i+dir;
+  if(i<0||j<0||j>=ex.length) return;
+  [ex[i],ex[j]]=[ex[j],ex[i]]; savePlan(); render();
+}
+document.addEventListener('click',ev=>{
+  const t=ev.target.closest('[data-act]'); if(!t || t.disabled) return;
+  const fn=act[t.dataset.act]; if(fn){ ev.preventDefault(); ev.stopPropagation(); fn(t,ev); }
+});
+document.addEventListener('input',ev=>{
+  const t=ev.target, id=t.id;
+  if(id==='libQ'){ state.lib.q=t.value; state.lib.limit=60; renderLibResults(); }
+  if(id==='sideQ'){ state.side.q=t.value; state.side.limit=40; renderSideResults(); }
+  if(id==='pkQ' && state.pick){ state.pick.f.q=t.value; state.pick.f.limit=60; renderPickResults(); }
+  if(t.dataset.f==='desc'){ plan.days[state.editDay].desc=t.value; savePlan(); }
+});
+document.addEventListener('change',ev=>{
+  const t=ev.target, id=t.id;
+  const filt={libB:[state.lib,'bp',renderLibResults],libE:[state.lib,'eq',renderLibResults],
+    sideB:[state.side,'bp',renderSideResults],sideE:[state.side,'eq',renderSideResults]};
+  if(filt[id]){ const [f,k,fn]=filt[id]; f[k]=t.value; f.limit=id.startsWith('side')?40:60; fn(); return; }
+  if((id==='pkB'||id==='pkE') && state.pick){ state.pick.f[id==='pkB'?'bp':'eq']=t.value; state.pick.f.limit=60; renderPickResults(); return; }
+  if(t.dataset.sel!==undefined){ t.checked?state.sel.add(t.dataset.sel):state.sel.delete(t.dataset.sel); render(); return; }
+  if(t.hasAttribute('data-selall')){
+    const d=plan.days[state.editDay];
+    if(t.checked) d.ex.forEach(x=>state.sel.add(x.uid)); else state.sel.clear();
+    render(); return;
+  }
+  if(id==='importFile'){
+    const file=t.files[0]; if(!file) return;
+    file.text().then(txt=>{
+      const p=normPlan(JSON.parse(txt)); if(!p) throw new Error('format');
+      plan=p; state.sel.clear(); if(DB.length) resolvePending(); savePlan(); state.lastDb=null; render(); toast('Jadwal diimpor');
+    }).catch(()=>toast('File tidak valid')).finally(()=>{t.value=''});
+    return;
+  }
+  const f=t.dataset.f; if(!f) return;
+  const d=plan.days[state.editDay];
+  if(f==='label'){ d.label=t.value.trim(); savePlan(); softRender(); return; }
+  if(f==='desc'){ d.desc=t.value; savePlan(); softRender(); return; }
+  if(f==='copyfrom'){
+    const src=plan.days[+t.value]; if(!src) return;
+    if((d.ex.length||d.desc) && !confirm('Isi '+DAYS[state.editDay]+' akan diganti dengan isi '+DAYS[+t.value]+'. Lanjut?')){ t.value=''; return; }
+    d.type=src.type; d.label=src.label; d.desc=src.desc; d.ex=src.ex.map(x=>({...x,uid:uid()})); state.sel.clear();
+    savePlan(); render(); toast('Disalin dari '+DAYS[+t.value]); return;
+  }
+  const it=d.ex.find(x=>x.uid===t.dataset.uid); if(!it) return;
+  if(f==='sets') it.sets=Math.max(1,Math.min(12,parseInt(t.value)||1));
+  if(f==='rest') it.rest=Math.max(0,parseInt(t.value)||0);
+  if(f==='reps') it.reps=t.value.trim()||'10';
+  if(f==='note') it.note=t.value.trim();
+  savePlan();
+  if(DESK && state.tab==='atur') softRender();
+});
+document.addEventListener('keydown',ev=>{ if(ev.key==='Escape' && !state.lockModal){ if($('#m2').classList.contains('open')) closeModal(2); else closeModal(1); }});
+
+/* ganti tata letak otomatis saat ukuran jendela berubah (mis. HP diputar, jendela laptop diperkecil) */
+const onMQ=e=>{ DESK=e.matches; state.lastDb=null; render(); };
+if(MQ.addEventListener) MQ.addEventListener('change',onMQ); else MQ.addListener(onMQ);
+
+/* ============ AKUN & SINKRON (login Google lewat Firebase) ============ */
+/* Tempel konfigurasi dari Firebase Console di sini:
+   Project settings → General → Your apps → (ikon </>) → SDK setup and configuration → Config.
+   Biarkan null kalau belum siap: aplikasi tetap jalan, jadwal disimpan di perangkat saja. */
+const FIREBASE_CONFIG = {
+  apiKey: "AIzaSyAld55ycBEt2eKlAUnhaquuVOrzttWltLY",
+  authDomain: "liftplan-fd709.firebaseapp.com",
+  projectId: "liftplan-fd709",
+  storageBucket: "liftplan-fd709.firebasestorage.app",
+  messagingSenderId: "1031868762292",
+  appId: "1:1031868762292:web:cc41e5b2ffabd2c5deefe1"
+};
+
+const FB_BASE = 'https://www.gstatic.com/firebasejs/10.12.2/';
+const IN_APP = /FBAN|FBAV|Instagram|WhatsApp|Line\/|Snapchat|TikTok|; wv\)/i.test(navigator.userAgent);
+const UNAME_RE = /^[a-z0-9_]{3,20}$/;
+const cloud = { ready:false, fb:null, user:null, profile:null, status:'off', saveT:null, pending:false };
+
+const G_ICON = '<svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.4-.4-3.5z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.2 0-9.6-3.3-11.3-8l-6.5 5C9.5 39.6 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.2-4.1 5.6l6.2 5.2C37 39.2 44 34 44 24c0-1.3-.1-2.4-.4-3.5z"/></svg>';
+
+const unameOf = ()=> cloud.profile && cloud.profile.username || '';
+const STATUS_TXT = { ok:'Tersinkron', sync:'Menyimpan…', err:'Gagal sinkron, coba lagi nanti', off:'Belum masuk' };
+
+async function cloudInit(){
+  renderAccount();
+  if(!FIREBASE_CONFIG) return;
+  try{
+    const [appM, authM, fsM] = await Promise.all([
+      import(FB_BASE+'firebase-app.js'), import(FB_BASE+'firebase-auth.js'), import(FB_BASE+'firebase-firestore.js')
+    ]);
+    const app = appM.initializeApp(FIREBASE_CONFIG);
+    cloud.fb = { auth:authM.getAuth(app), db:fsM.getFirestore(app), A:authM, F:fsM };
+    cloud.ready = true;
+    authM.onAuthStateChanged(cloud.fb.auth, onUser);
+  }catch(e){
+    console.error(e); cloud.status='err'; renderAccount();
+    toast('Fitur login gagal dimuat (cek internet)');
+  }
+}
+
+async function onUser(user){
+  cloud.user = user; cloud.profile = null;
+  if(!user){ cloud.status='off'; renderAccount(); state.lastDb=null; render(); return; }
+  cloud.status='sync'; renderAccount();
+  const { F, db } = cloud.fb;
+  try{
+    const snap = await F.getDoc(F.doc(db,'users',user.uid));
+    const data = snap.exists() ? snap.data() : {};
+    cloud.profile = { username: data.username || '' };
+    const p = data.plan ? normPlan(JSON.parse(JSON.stringify(data.plan))) : null;
+    if(p){ plan = p; store.set(K.plan, plan); state.sel.clear(); if(DB.length) resolvePending(); }
+    else await cloudWrite();                       /* akun baru: jadwal di perangkat ini dipindah ke akun */
+    cloud.status = 'ok';
+    if(!cloud.profile.username) openUsername(true);
+    else toast('Halo, '+cloud.profile.username+'!');
+  }catch(e){
+    console.error(e); cloud.status='err';
+    toast('Gagal mengambil data akun. Cek internet lalu muat ulang.');
+  }
+  renderAccount(); state.lastDb=null; render();
+}
+
+async function cloudWrite(){
+  if(!cloud.user) return;
+  const { F, db } = cloud.fb;
+  await F.setDoc(F.doc(db,'users',cloud.user.uid),
+    { plan: JSON.parse(JSON.stringify(plan)), updatedAt: F.serverTimestamp() }, { merge:true });
+}
+function cloudSave(){
+  if(!cloud.user) return;
+  cloud.status='sync'; renderAccount();
+  clearTimeout(cloud.saveT);
+  cloud.saveT = setTimeout(async ()=>{
+    try{ await cloudWrite(); cloud.status='ok'; }
+    catch(e){ console.error(e); cloud.status='err'; }
+    renderAccount();
+  }, 1200);
+}
+
+async function signIn(){
+  if(!FIREBASE_CONFIG){ openModal(1, setupInfoHTML(), 'narrow'); return; }
+  if(IN_APP){ openModal(1, inAppHTML(), 'narrow'); return; }
+  if(!cloud.ready){ toast('Fitur login masih dimuat, coba sebentar lagi'); return; }
+  const { A, auth } = cloud.fb;
+  try{
+    await A.signInWithPopup(auth, new A.GoogleAuthProvider());
+    if(!state.lockModal) closeModal(1);
+  }catch(e){
+    const c = e && e.code || '';
+    if(c==='auth/popup-closed-by-user' || c==='auth/cancelled-popup-request') return;
+    if(c==='auth/popup-blocked') toast('Pop-up diblokir. Izinkan pop-up untuk situs ini lalu coba lagi.');
+    else if(c==='auth/unauthorized-domain') toast('Domain ini belum diizinkan di Firebase (Authorized domains).');
+    else if(c==='auth/network-request-failed') toast('Tidak ada koneksi internet.');
+    else toast('Gagal masuk ('+(c||'error')+')');
+  }
+}
+async function signOutUser(){
+  if(!cloud.user) return;
+  if(!state.lockModal && !confirm('Keluar dari akun? Jadwal tetap tersimpan di akun dan di perangkat ini.')) return;
+  state.lockModal = false;
+  try{ await cloud.fb.A.signOut(cloud.fb.auth); }catch(e){ console.error(e); }
+  closeModal(1); toast('Sudah keluar');
+}
+
+function suggestUname(){
+  const u = cloud.user || {};
+  const base = String(u.displayName || (u.email||'').split('@')[0] || '').toLowerCase()
+    .normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9_]+/g,'_').replace(/^_+|_+$/g,'').slice(0,16);
+  return base.length>=3 ? base : '';
+}
+function openUsername(required){
+  state.lockModal = !!required;
+  const cur = unameOf();
+  openModal(1, `
+    <div class="mhead"><b>${required?'Buat username':'Ganti username'}</b>${required?'':'<button class="x" data-act="close" data-l="1" aria-label="Tutup">✕</button>'}</div>
+    <p class="sub" style="font-size:14px">${required?'Satu langkah lagi. Username ini yang tampil di aplikasi.':'Username lama akan dilepas dan bisa dipakai orang lain.'}</p>
+    <label class="f" for="unameIn">Username</label>
+    <div class="uname-wrap"><span>@</span><input id="unameIn" type="text" maxlength="20" autocomplete="off" autocapitalize="none" spellcheck="false" value="${esc(cur||suggestUname())}" placeholder="mis. budi_lifter"></div>
+    <div class="uhint" id="unameHint">3–20 karakter: huruf kecil, angka, dan garis bawah (_).</div>
+    <button class="btn primary block" data-act="saveUname" id="unameBtn">Simpan username</button>
+    ${required?'<button class="btn ghost block" style="margin-top:6px" data-act="signOut">Batal &amp; keluar</button>':''}`, 'narrow');
+  setTimeout(()=>{ const i=$('#unameIn'); if(i){ i.focus(); i.select(); } }, 60);
+}
+async function saveUname(){
+  const inp=$('#unameIn'), hint=$('#unameHint'), btn=$('#unameBtn'); if(!inp) return;
+  const v = inp.value.trim().toLowerCase(), old = unameOf();
+  const bad = msg=>{ hint.textContent=msg; hint.className='uhint err'; };
+  if(!UNAME_RE.test(v)) return bad('Gunakan 3–20 karakter: huruf kecil, angka, atau garis bawah (_).');
+  if(v===old){ state.lockModal=false; closeModal(1); return; }
+  const { F, db } = cloud.fb, uid = cloud.user.uid;
+  btn.disabled=true; btn.textContent='Menyimpan…';
+  try{
+    await F.runTransaction(db, async tx=>{
+      const nref = F.doc(db,'usernames',v);
+      const ns = await tx.get(nref);
+      if(ns.exists() && ns.data().uid!==uid) throw new Error('taken');
+      if(!ns.exists()) tx.set(nref, { uid });
+      if(old) tx.delete(F.doc(db,'usernames',old));
+      tx.set(F.doc(db,'users',uid), { username:v, displayName: cloud.user.displayName||'' }, { merge:true });
+    });
+    cloud.profile = Object.assign(cloud.profile||{}, { username:v });
+    state.lockModal=false; closeModal(1);
+    toast('Halo, '+v+'!'); renderAccount(); state.lastDb=null; render();
+  }catch(e){
+    console.error(e);
+    bad(e && e.message==='taken' ? 'Username @'+v+' sudah dipakai orang lain. Coba yang lain.' : 'Gagal menyimpan. Cek koneksi internet lalu coba lagi.');
+    btn.disabled=false; btn.textContent='Simpan username';
+  }
+}
+
+function avatarHTML(cls){
+  const u=cloud.user, name=unameOf() || (u&&u.displayName) || '?';
+  if(u && u.photoURL) return `<span class="avatar ${cls||''}"><img src="${esc(u.photoURL)}" alt="" referrerpolicy="no-referrer"></span>`;
+  return `<span class="avatar ${cls||''}">${esc(name.charAt(0))}</span>`;
+}
+function renderAccount(){
+  const top=$('#acctTop'), side=$('#acctSide');
+  const logged = !!cloud.user, name = unameOf();
+  if(top) top.innerHTML = logged
+    ? `<button class="acct-btn" data-act="acct" aria-label="Akun">${avatarHTML()}<span class="u">${esc(name?name:'Akun')}</span><i class="sdot ${cloud.status}"></i></button>`
+    : `<button class="acct-btn out" data-act="signIn">${G_ICON}<span>Masuk</span></button>`;
+  if(side) side.innerHTML = logged
+    ? `<div class="acct-card"><button class="acct-row" data-act="acct">${avatarHTML()}
+         <span class="who"><b>${esc(name?name:'Akun')}</b><small><i class="sdot ${cloud.status}"></i>${STATUS_TXT[cloud.status]||''}</small></span></button></div>`
+    : `<div class="acct-card"><b>Simpan jadwal di akun</b><p>Masuk supaya jadwal sama di HP dan laptop.</p>
+         <button class="gbtn" data-act="signIn">${G_ICON}Masuk dengan Google</button></div>`;
+}
+function openAccount(){
+  if(!cloud.user){ signIn(); return; }
+  const u=cloud.user, name=unameOf();
+  openModal(1, `
+    <div class="mhead"><b>Akun</b><button class="x" data-act="close" data-l="1" aria-label="Tutup">✕</button></div>
+    <div class="acct-hero">${avatarHTML('lg')}
+      <b>${esc(name||'Belum ada username')}</b>
+      <small>${esc(u.displayName||'')}${u.email?' · '+esc(u.email):''}</small>
+      <span class="st"><i class="sdot ${cloud.status}"></i>${STATUS_TXT[cloud.status]||''}</span>
+    </div>
+    <div class="info">Jadwal Anda tersimpan di akun ini. Masuk dengan akun Google yang sama di HP atau laptop lain, jadwalnya langsung muncul.</div>
+    <div class="acct-list">
+      <button class="btn block" data-act="changeUname">Ganti username</button>
+      <button class="btn danger block" data-act="signOut">Keluar</button>
+    </div>`, 'narrow');
+}
+function setupInfoHTML(){
+  return `<div class="mhead"><b>Login belum aktif</b><button class="x" data-act="close" data-l="1" aria-label="Tutup">✕</button></div>
+    <div class="info">Fitur masuk dengan Google belum disambungkan. Pemilik aplikasi perlu mengisi <b>FIREBASE_CONFIG</b> di file <code>index.html</code>.</div>
+    <p class="sub" style="font-size:14px">Sementara itu jadwal tetap tersimpan di perangkat ini. Gunakan Ekspor/Impor untuk memindahkannya.</p>
+    <button class="btn primary block" data-act="close" data-l="1">Mengerti</button>`;
+}
+function inAppHTML(){
+  return `<div class="mhead"><b>Buka di Chrome dulu</b><button class="x" data-act="close" data-l="1" aria-label="Tutup">✕</button></div>
+    <div class="info">Google tidak mengizinkan login dari browser di dalam aplikasi seperti WhatsApp atau Instagram.<br><br>
+      Tekan menu <b>⋮</b> di pojok kanan atas, lalu pilih <b>Buka di Chrome</b> (atau <b>Buka di browser</b>).</div>
+    <button class="btn primary block" data-act="copyLink">Salin link</button>`;
+}
+
+Object.assign(act, {
+  signIn: ()=>signIn(),
+  signOut: ()=>signOutUser(),
+  acct: ()=>openAccount(),
+  changeUname: ()=>openUsername(false),
+  saveUname: ()=>saveUname(),
+  copyLink: ()=>{
+    const done=()=>toast('Link disalin. Tempel di Chrome.');
+    try{ navigator.clipboard.writeText(location.href).then(done, ()=>prompt('Salin link ini:', location.href)); }
+    catch(e){ prompt('Salin link ini:', location.href); }
+  }
+});
+document.addEventListener('input', ev=>{
+  if(ev.target.id!=='unameIn') return;
+  const i=ev.target, pos=i.selectionStart, v=i.value.toLowerCase().replace(/\s+/g,'_').replace(/[^a-z0-9_]/g,'');
+  if(v!==i.value){ i.value=v; try{ i.setSelectionRange(pos,pos); }catch(e){} }
+  const h=$('#unameHint');
+  if(!v) { h.textContent='3–20 karakter: huruf kecil, angka, dan garis bawah (_).'; h.className='uhint'; }
+  else if(v.length<3) { h.textContent='Minimal 3 karakter.'; h.className='uhint err'; }
+  else { h.textContent='Akan tampil sebagai @'+v; h.className='uhint ok'; }
+});
+document.addEventListener('keydown', ev=>{ if(ev.key==='Enter' && ev.target.id==='unameIn'){ ev.preventDefault(); saveUname(); } });
+
+/* ============ MULAI ============ */
+render();
+loadDB(false);
+cloudInit();
+
+</script>
+</body>
+</html>
